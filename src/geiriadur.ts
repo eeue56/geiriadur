@@ -189,9 +189,6 @@ export async function runner(): Promise<any> {
     await Promise.all(
         files.map(async (fileName) => {
             return new Promise(async (resolve, reject) => {
-                if (!fileName.endsWith("html.ts")) {
-                    return resolve(null);
-                }
                 console.log(`Found ${fileName}`);
 
                 const fileContents = (await fsPromises.readFile(fileName)).toString();
