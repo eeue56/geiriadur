@@ -1,12 +1,14 @@
 {
   "name": "@eeue56/geiriadur",
-  "version": "0.0.1-beta.0",
+  "version": "0.0.1",
   "description": "An Elm-like documentation generator for TypeScript",
   "main": "src/geiriadur.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },
-  "bin": "build/geiriadur.js",
+  "bin": {
+    "geiriadur": "build/geiriadur.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eeue56/geiriadur.git"
