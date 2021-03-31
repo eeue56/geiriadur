@@ -26,40 +26,40 @@ async function getFiles(dir: string): Promise<string[]> {
 }
 
 type ExportedType = {
-    kind: 'type';
+    kind: "type";
     type: string[];
     jsDoc: string[];
     pos: {
         start: number;
         end: number;
-    }
-}
+    };
+};
 
 type ExportedFunction = {
-    kind: 'function';
+    kind: "function";
     type: string[];
     jsDoc: string[];
     pos: {
         start: number;
         end: number;
-    }
-}
+    };
+};
 
-type Export = ExportedType | ExportedFunction
+type Export = ExportedType | ExportedFunction;
 
 function exportTitle(exported: Export): string {
-    const firstLine = exported.type[0] || '';
+    const firstLine = exported.type[0] || "";
 
     switch (exported.kind) {
-        case 'type': {
+        case "type": {
             const matches = firstLine.match(/export type (.+)/);
             if (matches) {
                 return "type " + matches[1].split("=")[0];
             }
 
-            return ''
+            return "";
         }
-        case 'function':{
+        case "function": {
             const matches = firstLine.match(/export function (.+)/);
             if (matches) {
                 if (matches[1].indexOf("<") > -1) {
@@ -69,41 +69,40 @@ function exportTitle(exported: Export): string {
                 return matches[1].split("(")[0];
             }
 
-            return ''
+            return "";
         }
     }
 }
 
-function exportToEnglish(repo: string, filePath: string, exported: Export): string {
+function exportToEnglish(
+    repo: string,
+    filePath: string,
+    exported: Export
+): string {
     const headline = "## " + exportTitle(exported);
     const typeBody = "```javascript\n" + exported.type.join("\n") + "\n```";
     const comments = exported.jsDoc.join("\n");
 
     const linkToSource = `[View source](${repo}/blob/main/${filePath}#L${exported.pos.start}-L${exported.pos.end})`;
 
-    return [
-        headline,
-        typeBody,
-        comments,
-        linkToSource
-    ].join("\n");
+    return [ headline, typeBody, comments, linkToSource ].join("\n");
 }
 
 function getExports(fileContents: string): Export[] {
     let isInJSDoc = false;
-    let currentJSDoc: string[] = [];
+    let currentJSDoc: string[] = [ ];
 
     let isInType = false;
-    let currentType: string[] = [];
+    let currentType: string[] = [ ];
 
     let isInFunction = false;
-    let currentFunction: string[] = [];
+    let currentFunction: string[] = [ ];
 
     let startLineNumber = 0;
 
-    let types: Export[] = [];
+    let types: Export[] = [ ];
 
-    const lines = fileContents.split('\n');
+    const lines = fileContents.split("\n");
 
     lines.forEach((line, lineNumber) => {
         if (isInJSDoc) {
@@ -111,28 +110,28 @@ function getExports(fileContents: string): Export[] {
             if (line.endsWith("*/")) {
                 isInJSDoc = false;
             }
-        } else if (isInType){
+        } else if (isInType) {
             currentType.push(line);
 
-            if (line.length === 0){
+            if (line.length === 0) {
                 isInType = false;
                 types.push({
-                    kind: 'type',
+                    kind: "type",
                     jsDoc: currentJSDoc,
                     type: currentType,
                     pos: {
                         start: startLineNumber,
-                        end: lineNumber
-                    }
-                })
+                        end: lineNumber,
+                    },
+                });
 
-                currentJSDoc = [];
-                currentType = [];
+                currentJSDoc = [ ];
+                currentType = [ ];
             }
-        } else if (isInFunction){
+        } else if (isInFunction) {
             currentFunction.push(line);
         } else {
-            if (line.startsWith("/**")){
+            if (line.startsWith("/**")) {
                 isInJSDoc = true;
                 currentJSDoc.push(line);
             } else if (line.startsWith("export type")) {
@@ -147,24 +146,23 @@ function getExports(fileContents: string): Export[] {
         }
 
         if (isInFunction) {
-            if (line.endsWith("{")){
+            if (line.endsWith("{")) {
                 isInFunction = false;
                 types.push({
-                    kind: 'function',
+                    kind: "function",
                     jsDoc: currentJSDoc,
                     type: currentFunction,
                     pos: {
                         start: startLineNumber,
-                        end: lineNumber
-                    }
-                })
+                        end: lineNumber,
+                    },
+                });
 
-                currentJSDoc = [];
-                currentFunction = [];
+                currentJSDoc = [ ];
+                currentFunction = [ ];
             }
         }
-    })
-
+    });
 
     return types;
 }
@@ -176,7 +174,7 @@ export async function runner(): Promise<any> {
 
     const strPackage = (await fsPromises.readFile("./package.json")).toString();
     const packageJson = JSON5.parse(strPackage);
-    const repo = packageJson.homepage.split('#')[0];
+    const repo = packageJson.homepage.split("#")[0];
 
     console.log(`Generating docs for ${packageJson.name} hosted at ${repo}`);
     console.log(`Looking for docs in ${config.include}...`);
@@ -185,33 +183,36 @@ export async function runner(): Promise<any> {
 
     const root = process.cwd();
 
-
     await Promise.all(
         files.map(async (fileName) => {
             return new Promise(async (resolve, reject) => {
                 console.log(`Found ${fileName}`);
 
-                const fileContents = (await fsPromises.readFile(fileName)).toString();
+                const fileContents = (
+                    await fsPromises.readFile(fileName)
+                ).toString();
                 const exportedItems = getExports(fileContents);
 
-                const docs = exportedItems.map((exported) => {
-                    return exportToEnglish(repo, fileName, exported);
-                }).join('\n');
+                const docs = exportedItems
+                    .map((exported) => {
+                        return exportToEnglish(repo, fileName, exported);
+                    })
+                    .join("\n");
 
-                const fileNameWithoutPath = fileName.split('.')[0] + '.md';
+                const fileNameWithoutPath = fileName.split(".")[0] + ".md";
 
-                let additionalPath = '';
+                let additionalPath = "";
 
-                if (fileName.indexOf('/') > -1){
-                    const split = fileName.split('/');
-                    additionalPath = split.slice(0, split.length - 1).join('/');
+                if (fileName.indexOf("/") > -1) {
+                    const split = fileName.split("/");
+                    additionalPath = split.slice(0, split.length - 1).join("/");
                 }
 
                 try {
-                    await fsPromises.mkdir('docs/' + additionalPath, { recursive: true });
-                } catch (e) {
-
-                }
+                    await fsPromises.mkdir("docs/" + additionalPath, {
+                        recursive: true,
+                    });
+                } catch (e) {}
                 await fsPromises.writeFile(`docs/${fileNameWithoutPath}`, docs);
 
                 resolve(null);
