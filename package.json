@@ -1,6 +1,6 @@
 {
   "name": "@eeue56/geiriadur",
-  "version": "0.0.2-beta.0",
+  "version": "0.0.2-beta.1",
   "description": "An Elm-like documentation generator for TypeScript",
   "main": "src/geiriadur.ts",
   "scripts": {
