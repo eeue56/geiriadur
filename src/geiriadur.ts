@@ -106,9 +106,14 @@ function getExports(fileContents: string): Export[] {
 
     lines.forEach((line, lineNumber) => {
         if (isInJSDoc) {
-            currentJSDoc.push(line);
             if (line.endsWith("*/")) {
                 isInJSDoc = false;
+                return;
+            }
+            if (line.startsWith(" *")) {
+                currentJSDoc.push(line.slice(3));
+            } else {
+                currentJSDoc.push(line);
             }
         } else if (isInType) {
             currentType.push(line);
@@ -133,7 +138,7 @@ function getExports(fileContents: string): Export[] {
         } else {
             if (line.startsWith("/**")) {
                 isInJSDoc = true;
-                currentJSDoc.push(line);
+                currentJSDoc.push(line.slice(3));
             } else if (line.startsWith("export type")) {
                 isInType = true;
                 startLineNumber = lineNumber;
